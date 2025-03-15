@@ -1,0 +1,17 @@
+# Git 関連
+.git
+.gitignore
+
+# Node.js の依存関係（ホスト側の node_modules はマウントするので不要）
+node_modules
+
+# ログファイル
+npm-debug.log
+yarn-error.log
+
+# 本番ビルドの成果物（再ビルド時に不要なキャッシュ）
+build
+.next
+
+# OS 生成のファイル
+.DS_Store

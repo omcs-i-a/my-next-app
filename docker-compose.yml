@@ -1,0 +1,17 @@
+version: '3'
+services:
+  app:
+    build:
+      context: .
+      # Dockerfile の指定
+    ports:
+      - "3000:3000"
+    volumes:
+      # ホストの現在のディレクトリを /app にマウント（コード変更が即反映）
+      - .:/app
+      # node_modules はホスト側の内容で上書きされないように匿名ボリュームで管理
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    # 開発用のコマンド。Next.js の開発サーバー（ホットリロード）を起動する
+    command: npm run dev
