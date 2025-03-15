@@ -1,4 +1,18 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Terraform関連
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/terraform.tfvars
+
+# ビルド成果物
+.next/
+node_modules/
+build/
+dist/
+
+# ドキュメント
+docs/infra.md
 
 # dependencies
 /node_modules
