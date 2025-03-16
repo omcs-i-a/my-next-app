@@ -7,10 +7,10 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # ホストの現在のディレクトリを /app にマウント（コード変更が即反映）
-      - .:/app
-      # node_modules はホスト側の内容で上書きされないように匿名ボリュームで管理
+      # node_modules を先にマウント
       - /app/node_modules
+      # その後でホストのディレクトリをマウント
+      - .:/app
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/nextauth
@@ -20,8 +20,16 @@ services:
       - GITHUB_SECRET=${GITHUB_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-    # 開発用のコマンド。Next.js の開発サーバー（ホットリロード）を起動する
-    command: sh -c "npx prisma generate && npm run dev"
+    # パッケージの存在確認を追加
+    command: >
+      sh -c "
+        if [ ! -d node_modules/@auth ]; then
+          echo 'Installing missing packages...'
+          npm install
+        fi &&
+        npx prisma generate &&
+        npm run dev
+      "
     depends_on:
       - db
 
