@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 
-export default function SignUp() {
+function SignUpForm() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [name, setName] = useState('');
@@ -251,5 +251,13 @@ export default function SignUp() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function SignUp() {
+    return (
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">ロード中...</div>}>
+            <SignUpForm />
+        </Suspense>
     );
 } 
