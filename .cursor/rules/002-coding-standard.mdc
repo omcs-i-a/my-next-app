@@ -1,0 +1,193 @@
+---
+description: このファイルには、プロジェクト内でコードを記述する際のスタイルガイドが含まれています。インデントの規則や命名規則、コメントの書き方、エラーハンドリングの基準、コードのフォーマットに関するルールを定義しています。これらのスタイルガイドに従うことで、コードの可読性が向上し、プロジェクトの一貫性が保たれます。
+globs: 
+alwaysApply: false
+---
+
+# Next.jsアプリケーション コーディングスタンダード
+
+このファイルでは、Next.jsアプリケーションのコーディングスタンダードを定義します。これらのスタイルガイドに従うことで、コードの可読性が向上し、プロジェクトの一貫性が保たれます。
+
+## 1. TypeScript 規約
+
+### 型定義
+- **明示的な型定義**: 関数の引数と戻り値には明示的な型を指定する
+- **interface vs type**: 拡張可能性が必要な場合は `interface`、そうでない場合は `type` を使用
+- **Genericsの活用**: 汎用的なコンポーネントやユーティリティには適切にジェネリクスを使用
+
+```typescript
+// 良い例
+interface User {
+  id: string;
+  name: string;
+  email?: string;
+}
+
+type AuthProviders = 'google' | 'github' | 'credentials';
+
+function fetchUserData<T>(url: string): Promise<T> {
+  // ...
+}
+```
+
+### null/undefined の扱い
+- オプショナルな値には `undefined` を使用し、`null` の使用は最小限に抑える
+- オプショナルチェーン演算子 (`?.`) と Nullish coalescing 演算子 (`??`) を活用
+
+## 2. React/Next.js コンポーネント
+
+### コンポーネント設計
+- **関数コンポーネント**: クラスコンポーネントではなく関数コンポーネントを使用
+- **適切な粒度**: 一つのコンポーネントは一つの責務を持つように設計
+- **フォルダ構成**: 関連するコンポーネントは同じディレクトリにまとめる
+
+```tsx
+// 良い例
+export default function UserMenu({ user }: { user: User }) {
+  // ...
+}
+```
+
+### Props の取り扱い
+- **分割代入**: props は分割代入で受け取る
+- **デフォルト値**: 必要に応じてデフォルト値を設定
+- **children**: React.ReactNode 型を使用
+
+```tsx
+// 良い例
+export default function Button({
+  children,
+  variant = 'primary',
+  onClick
+}: {
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary';
+  onClick?: () => void;
+}) {
+  // ...
+}
+```
+
+## 3. ファイル構成とインポート
+
+### ファイル命名
+- **コンポーネント**: PascalCase (`UserProfile.tsx`)
+- **ユーティリティ/フック**: camelCase (`useAuth.ts`)
+- **ページコンポーネント**: `page.tsx`
+- **レイアウトコンポーネント**: `layout.tsx`
+
+### インポート順序
+1. 外部ライブラリ (React, Next.js など)
+2. 内部コンポーネント
+3. 型定義
+4. ユーティリティ関数
+5. スタイル
+
+```tsx
+// 良い例
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { Button } from '@/components/Button';
+import { User } from '@/types';
+import { formatDate } from '@/utils/date';
+import styles from './styles.module.css';
+```
+
+## 4. API と非同期処理
+
+### エラーハンドリング
+- try/catch ブロックを使用した適切なエラーハンドリング
+- エラーメッセージはユーザーフレンドリーなものを表示
+
+```typescript
+// 良い例
+try {
+  const data = await fetchData();
+  return data;
+} catch (error) {
+  console.error('データ取得中にエラーが発生しました:', error);
+  throw new Error('データを取得できませんでした。後でもう一度お試しください。');
+}
+```
+
+### API ルート
+- HTTP メソッドごとに適切な関数を実装
+- 適切なステータスコードとレスポンス形式を使用
+
+```typescript
+// 良い例
+export async function GET(request: Request) {
+  try {
+    // データ取得ロジック
+    return Response.json({ data });
+  } catch (error) {
+    return Response.json(
+      { error: 'データ取得に失敗しました' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+## 5. 認証とセキュリティ
+
+### 認証処理
+- 認証状態は useSession フックを使用して管理
+- 保護されたルートには適切なミドルウェアを使用
+
+```typescript
+// middleware.ts の例
+export function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const isPublicPath = publicPaths.includes(path);
+  const token = request.cookies.get('next-auth.session-token')?.value || '';
+
+  if (!token && !isPublicPath) {
+    return NextResponse.redirect(new URL('/auth/signin', request.url));
+  }
+}
+```
+
+### セキュリティ対策
+- ユーザー入力の検証
+- XSS対策（Reactの自動エスケープ機能を活用）
+- CSRF対策
+
+## 6. コメントとドキュメンテーション
+
+### コードコメント
+- **自明でないコード**: 複雑なロジックには適切なコメントを記述
+- **TODO/FIXME**: 一時的な対応や将来の改善点には適切なタグを使用
+- **JSDoc**: 公開APIやユーティリティ関数にはJSDocスタイルのコメントを記述
+
+```typescript
+/**
+ * ユーザーの認証状態をチェックし、認証されていない場合はリダイレクトする
+ * @param {User | null} user - 現在のユーザー情報
+ * @returns {boolean} 認証済みかどうか
+ */
+function checkAuthentication(user: User | null): boolean {
+  // ...
+}
+```
+
+## 7. テスト
+
+### ユニットテスト
+- 独立した小さなテストケース
+- モックを活用した外部依存の切り離し
+
+### コンポーネントテスト
+- レンダリング結果の検証
+- ユーザーインタラクションのシミュレーション
+
+## 8. Docker開発
+
+### Dockerfile/docker-compose.yml
+- マルチステージビルドの活用
+- 最小限の依存関係
+- 適切なキャッシュ戦略
+
+### 環境変数
+- 開発/本番環境で適切に分離
+- シークレット情報は .env.local に格納（GitHubには登録しない）

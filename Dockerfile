@@ -16,6 +16,9 @@ RUN npm install
 # 残りのソースコードを全てコピー
 COPY . .
 
+# Prismaクライアントを生成
+RUN npx prisma generate
+
 # 本番用に Next.js アプリをビルド（変更がない場合はキャッシュが有効）
 RUN npm run build
 
