@@ -4,11 +4,11 @@ variable "location" {
 }
 
 variable "subscription_id" {
-  type    = string
+  type = string
 }
 
 variable "tenant_id" {
-  type    = string
+  type = string
 }
 
 variable "resource_group_name" {
@@ -34,4 +34,51 @@ variable "webapp_name" {
 variable "docker_image_name" {
   type    = string
   default = "my-next-app"
+}
+
+# PostgreSQL設定
+variable "db_server_name" {
+  type    = string
+  default = "my-nextapp-db-server"
+}
+
+variable "db_admin_username" {
+  type    = string
+  default = "postgres"
+}
+
+variable "db_admin_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "dev_ip_address" {
+  type        = string
+  description = "開発環境のIPアドレス"
+}
+
+# NextAuth設定
+variable "nextauth_secret" {
+  type      = string
+  sensitive = true
+}
+
+variable "github_id" {
+  type      = string
+  sensitive = true
+}
+
+variable "github_secret" {
+  type      = string
+  sensitive = true
+}
+
+variable "google_client_id" {
+  type      = string
+  sensitive = true
+}
+
+variable "google_client_secret" {
+  type      = string
+  sensitive = true
 }

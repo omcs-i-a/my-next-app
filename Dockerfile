@@ -16,6 +16,9 @@ RUN npm install
 # 残りのソースコードを全てコピー
 COPY . .
 
+# 本番環境用の環境変数を設定
+RUN cp .env.production .env
+
 # Prismaクライアントを生成
 RUN npx prisma generate
 
@@ -25,5 +28,11 @@ RUN npm run build
 # コンテナがリッスンするポート（Next.js はデフォルト3000）
 EXPOSE 3000
 
-# 本番サーバーを起動（"npm run start" は next start を実行する前提）
-CMD ["npm", "run", "start"]
+# 起動スクリプトを作成
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'npx prisma migrate deploy' >> /app/start.sh && \
+    echo 'npm run start' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# 本番サーバーを起動（マイグレーションを実行してからサーバーを起動）
+CMD ["/app/start.sh"]
