@@ -1,6 +1,34 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function ChatPage() {
+    const { data: session, status } = useSession();
+    const router = useRouter();
+
+    useEffect(() => {
+        // 未認証の場合はサインインページにリダイレクト
+        if (status === 'unauthenticated') {
+            router.push('/auth/signin?callbackUrl=' + encodeURIComponent('/chat'));
+        }
+    }, [status, router]);
+
+    // ロード中の表示
+    if (status === 'loading') {
+        return (
+            <div className="p-6 h-full flex items-center justify-center">
+                <div className="text-lg">ロード中...</div>
+            </div>
+        );
+    }
+
+    // 未認証の場合は何も表示しない（リダイレクト中）
+    if (!session) {
+        return null;
+    }
+
     return (
         <div className="p-6 h-full flex flex-col">
             <h1 className="text-2xl font-bold mb-4">チャット</h1>
@@ -10,7 +38,7 @@ export default function ChatPage() {
                 {/* サンプルメッセージ(受信) */}
                 <div className="flex justify-start">
                     <div className="bg-gray-200 text-gray-800 px-3 py-2 rounded max-w-sm break-words">
-                        こんにちは！何かお手伝いできますか？
+                        こんにちは、{session.user?.name || 'ゲスト'}さん！何かお手伝いできますか？
                     </div>
                 </div>
 
