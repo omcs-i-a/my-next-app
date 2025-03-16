@@ -30,8 +30,8 @@ export default function RootLayout({
         <html lang="en">
             <body className="h-screen w-screen bg-gray-100 flex">
                 {/* 左サイドバー */}
-                <aside className="w-64 bg-white shadow flex flex-col">
-                    <div className="p-4 font-bold text-xl border-b">My Next App</div>
+                <aside className="w-64 bg-gray-100 shadow flex flex-col">
+                    <div className="p-4 font-bold text-xl">My Next App</div>
                     <nav className="flex-1 p-4 space-y-2">
                         <Link
                             href="/"
