@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 
 export default function SignUp() {
     const router = useRouter();
@@ -13,6 +14,8 @@ export default function SignUp() {
     const [password, setPassword] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [error, setError] = useState('');
+    const searchParams = useSearchParams();
+    const callbackUrl = searchParams?.get('callbackUrl') || '/';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,8 +55,8 @@ export default function SignUp() {
                 throw new Error(data.message || 'アカウント作成に失敗しました。');
             }
 
-            // 成功したらログインページへリダイレクト
-            router.push('/auth/signin?registered=true');
+            // 成功したらログインページへリダイレクト（callbackUrlを維持）
+            router.push(`/auth/signin?registered=true&callbackUrl=${encodeURIComponent(callbackUrl)}`);
         } catch (error: any) {
             console.error('登録エラー:', error);
             setError(error.message || 'アカウント作成中にエラーが発生しました。');
@@ -65,7 +68,7 @@ export default function SignUp() {
     const handleGitHubSignUp = async () => {
         setIsLoading(true);
         try {
-            await signIn('github', { callbackUrl: '/' });
+            await signIn('github', { callbackUrl });
         } catch (error) {
             console.error('GitHubサインアップエラー:', error);
         } finally {
@@ -76,7 +79,7 @@ export default function SignUp() {
     const handleGoogleSignUp = async () => {
         setIsLoading(true);
         try {
-            await signIn('google', { callbackUrl: '/' });
+            await signIn('google', { callbackUrl });
         } catch (error) {
             console.error('Googleサインアップエラー:', error);
         } finally {
@@ -90,6 +93,11 @@ export default function SignUp() {
                 <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
                     アカウント作成
                 </h2>
+                {callbackUrl && callbackUrl !== '/' && (
+                    <p className="mt-2 text-center text-sm text-gray-600">
+                        登録後に <span className="font-medium">{callbackUrl}</span> へリダイレクトします
+                    </p>
+                )}
             </div>
 
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -233,7 +241,10 @@ export default function SignUp() {
                     </form>
 
                     <div className="mt-6 text-center">
-                        <Link href="/auth/signin" className="font-medium text-indigo-600 hover:text-indigo-500">
+                        <Link
+                            href={`/auth/signin${callbackUrl !== '/' ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ''}`}
+                            className="font-medium text-indigo-600 hover:text-indigo-500"
+                        >
                             すでにアカウントをお持ちの方はこちら
                         </Link>
                     </div>

@@ -1,14 +1,17 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 export default function SignIn() {
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const searchParams = useSearchParams();
+    const callbackUrl = searchParams?.get('callbackUrl') || '/';
 
     const handleCredentialsLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -19,7 +22,8 @@ export default function SignIn() {
             const result = await signIn('credentials', {
                 redirect: false,
                 email,
-                password
+                password,
+                callbackUrl
             });
 
             if (result?.error) {
@@ -38,7 +42,7 @@ export default function SignIn() {
     const handleGitHubSignIn = async () => {
         setIsLoading(true);
         try {
-            await signIn('github', { callbackUrl: '/' });
+            await signIn('github', { callbackUrl });
         } catch (error) {
             console.error('サインインエラー:', error);
         } finally {
@@ -49,7 +53,7 @@ export default function SignIn() {
     const handleGoogleSignIn = async () => {
         setIsLoading(true);
         try {
-            await signIn('google', { callbackUrl: '/' });
+            await signIn('google', { callbackUrl });
         } catch (error) {
             console.error('サインインエラー:', error);
         } finally {
@@ -63,6 +67,11 @@ export default function SignIn() {
                 <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
                     アカウントにログイン
                 </h2>
+                {callbackUrl && callbackUrl !== '/' && (
+                    <p className="mt-2 text-center text-sm text-gray-600">
+                        ログイン後に <span className="font-medium">{callbackUrl}</span> へリダイレクトします
+                    </p>
+                )}
             </div>
 
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
