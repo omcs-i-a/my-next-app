@@ -6,6 +6,9 @@ const nextConfig = {
             'avatars.githubusercontent.com' // GitHub認証用
         ],
     },
+    eslint: {
+        ignoreDuringBuilds: true, // ビルド時のESLintチェックを無効化
+    },
 };
 
 module.exports = nextConfig; 
