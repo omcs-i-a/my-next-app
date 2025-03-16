@@ -7,6 +7,7 @@ import { PrismaClient } from '@prisma/client';
 import { compare } from 'bcrypt';
 import { JWT } from 'next-auth/jwt';
 import { Session } from 'next-auth';
+import { NextAuthOptions } from 'next-auth';
 
 const prisma = new PrismaClient();
 
@@ -19,7 +20,7 @@ type UserWithPassword = {
     passwordHash: string | null;
 };
 
-export const authOptions = {
+const options: NextAuthOptions = {
     adapter: PrismaAdapter(prisma) as any,
     providers: [
         GithubProvider({
@@ -91,6 +92,6 @@ export const authOptions = {
     debug: process.env.NODE_ENV === 'development'
 };
 
-const handler = NextAuth(authOptions);
+const handler = NextAuth(options);
 
 export { handler as GET, handler as POST };
