@@ -18,7 +18,7 @@ export default function ChatPage() {
     // ロード中の表示
     if (status === 'loading') {
         return (
-            <div className="p-6 h-full flex items-center justify-center">
+            <div className="p-3 sm:p-6 h-full flex items-center justify-center bg-white text-gray-900">
                 <div className="text-lg">ロード中...</div>
             </div>
         );
@@ -30,11 +30,11 @@ export default function ChatPage() {
     }
 
     return (
-        <div className="p-6 h-full flex flex-col">
+        <div className="p-3 sm:p-6 h-full flex flex-col bg-white text-gray-900">
             <h1 className="text-2xl font-bold mb-4">チャット</h1>
 
             {/* メッセージ表示エリア */}
-            <div className="flex-1 overflow-auto space-y-3 mb-3 bg-white rounded p-4 shadow">
+            <div className="flex-1 overflow-auto space-y-3 mb-3 bg-white rounded p-4 shadow border border-gray-200">
                 {/* サンプルメッセージ(受信) */}
                 <div className="flex justify-start">
                     <div className="bg-gray-200 text-gray-800 px-3 py-2 rounded max-w-sm break-words">
