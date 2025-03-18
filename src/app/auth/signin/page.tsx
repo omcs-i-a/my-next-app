@@ -62,9 +62,9 @@ function SignInForm() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen py-12 bg-gray-50 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <div className="flex flex-col items-center justify-center min-h-screen p-3 sm:py-12 bg-gray-50 sm:px-6 lg:px-8">
+            <div className="w-full sm:mx-auto sm:max-w-md">
+                <h2 className="mt-3 sm:mt-6 text-center text-2xl sm:text-3xl font-extrabold text-gray-900">
                     アカウントにログイン
                 </h2>
                 {callbackUrl && callbackUrl !== '/' && (
@@ -74,15 +74,15 @@ function SignInForm() {
                 )}
             </div>
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <div className="mt-4 sm:mt-8 w-full sm:mx-auto sm:max-w-md">
+                <div className="bg-white py-6 sm:py-8 px-4 shadow sm:rounded-lg sm:px-10">
                     {error && (
                         <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 text-sm text-red-700">
                             {error}
                         </div>
                     )}
 
-                    <form className="space-y-6" onSubmit={handleCredentialsLogin}>
+                    <form className="space-y-4 sm:space-y-6" onSubmit={handleCredentialsLogin}>
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                                 メールアドレス
@@ -130,7 +130,7 @@ function SignInForm() {
                         </div>
                     </form>
 
-                    <div className="mt-6">
+                    <div className="mt-5 sm:mt-6">
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
                                 <div className="w-full border-t border-gray-300" />
@@ -140,7 +140,7 @@ function SignInForm() {
                             </div>
                         </div>
 
-                        <div className="mt-6 grid grid-cols-2 gap-3">
+                        <div className="mt-5 sm:mt-6 grid grid-cols-2 gap-3">
                             <div>
                                 <button
                                     onClick={handleGitHubSignIn}
@@ -175,7 +175,7 @@ function SignInForm() {
                         </div>
                     </div>
 
-                    <div className="mt-6 text-center">
+                    <div className="mt-5 sm:mt-6 text-center">
                         <Link
                             href="/auth/signup"
                             className="font-medium text-indigo-600 hover:text-indigo-500"
