@@ -2,10 +2,25 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-export default function UserMenu() {
+interface UserMenuProps {
+    onLinkClick?: () => void;
+}
+
+export default function UserMenu({ onLinkClick }: UserMenuProps = {}) {
     const { data: session, status } = useSession();
     const isLoading = status === 'loading';
+    const router = useRouter();
+
+    const handleNavigate = (path: string) => {
+        if (onLinkClick) {
+            onLinkClick();
+            router.push(path);
+        } else {
+            router.push(path);
+        }
+    };
 
     if (isLoading) {
         return <div className="text-sm text-gray-600">ロード中...</div>;
@@ -14,18 +29,18 @@ export default function UserMenu() {
     if (!session) {
         return (
             <div className="flex space-x-2">
-                <Link
-                    href="/auth/signin"
+                <button
+                    onClick={() => handleNavigate('/auth/signin')}
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition"
                 >
                     ログイン
-                </Link>
-                <Link
-                    href="/auth/signup"
+                </button>
+                <button
+                    onClick={() => handleNavigate('/auth/signup')}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition"
                 >
                     新規登録
-                </Link>
+                </button>
             </div>
         );
     }
@@ -52,7 +67,10 @@ export default function UserMenu() {
             </div>
             <div className="ml-2">
                 <button
-                    onClick={() => signOut({ callbackUrl: '/auth/signout' })}
+                    onClick={() => {
+                        if (onLinkClick) onLinkClick();
+                        signOut({ callbackUrl: '/auth/signout' });
+                    }}
                     className="px-3 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 transition"
                 >
                     ログアウト
