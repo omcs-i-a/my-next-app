@@ -191,3 +191,54 @@ function checkAuthentication(user: User | null): boolean {
 ### 環境変数
 - 開発/本番環境で適切に分離
 - シークレット情報は .env.local に格納（GitHubには登録しない）
+
+## 9. データセキュリティとプライバシー
+
+### クライアントコンポーネントへのデータ受け渡し
+- **DTOパターン**: サーバーからクライアントへデータを渡す際はDTOパターンを使用し、必要最小限の情報のみを含める
+- **機密情報の除外**: パスワードハッシュ、トークン、内部ID参照などの機密情報は絶対にクライアントに渡さない
+- **明示的なフィールド選択**: PrismaなどのORMを使用する際は`select`句を明示的に指定し、必要なフィールドのみを取得する
+
+```typescript
+// 良い例: DTOを使用した安全なデータ受け渡し
+type UserDTO = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+function toUserDTO(user: User): UserDTO {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    // パスワードハッシュなどは含めない
+  };
+}
+
+// 良い例: Prismaでのselect句の明示
+const users = await prisma.user.findMany({
+  select: {
+    id: true,
+    name: true,
+    email: true,
+    // パスワードハッシュは選択しない
+  }
+});
+
+// 悪い例: 全フィールドの取得と受け渡し
+const user = await prisma.user.findUnique({
+  where: { id: userId }
+});
+return user; // 機密情報も含めて全て返してしまう
+```
+
+### APIレスポンスのセキュリティ
+- エラーメッセージには詳細な内部情報や例外スタックトレースを含めない
+- ユーザー入力は常にバリデーションを行い、安全な形で処理する
+- セキュリティ関連の設定や認証情報をクライアントサイドのコードに含めない
+
+### データアクセス制御
+- サーバーアクションやAPIエンドポイントでは、認証・認可チェックを必ず行う
+- 別ユーザーのデータにアクセスできないよう、所有権の確認を厳格に行う
+- データベースクエリにはユーザーIDによるフィルタリングを常に含める
