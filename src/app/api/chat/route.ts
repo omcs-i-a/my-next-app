@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/config/auth';
 import OpenAI from 'openai';
 import { PrismaClient } from '@prisma/client';
+import { toChatDTO, toChatsDTO, toMessageDTO } from '@/lib/dtoConverters';
+import { getChatsForUser, getChatWithMessages } from '@/lib/chatService';
 
 // Prisma クライアントを初期化
 const prisma = new PrismaClient();
@@ -170,20 +172,9 @@ export async function GET(req: NextRequest) {
         try {
             if (chatId) {
                 console.log('Chat History API: 特定チャット取得', chatId);
-                // 特定のチャットのメッセージを取得
-                const chat = await prisma.chat.findUnique({
-                    where: {
-                        id: chatId,
-                        userId: session.user.id // ユーザー自身のチャットのみ取得
-                    },
-                    include: {
-                        messages: {
-                            orderBy: {
-                                createdAt: 'asc'
-                            }
-                        }
-                    }
-                });
+
+                // 特定のチャットを安全に取得
+                const chat = await getChatWithMessages(chatId, session.user.id);
 
                 if (!chat) {
                     console.log('Chat History API: チャットが見つかりません');
@@ -193,15 +184,9 @@ export async function GET(req: NextRequest) {
                 return NextResponse.json({ chat });
             } else {
                 console.log('Chat History API: すべてのチャット取得');
-                // ユーザーのすべてのチャットを取得
-                const chats = await prisma.chat.findMany({
-                    where: {
-                        userId: session.user.id
-                    },
-                    orderBy: {
-                        updatedAt: 'desc'
-                    }
-                });
+
+                // ユーザーのすべてのチャットを安全に取得
+                const chats = await getChatsForUser(session.user.id);
 
                 return NextResponse.json({ chats });
             }
