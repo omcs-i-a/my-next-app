@@ -15,3 +15,12 @@ build
 
 # OS 生成のファイル
 .DS_Store
+
+# 環境変数ファイル - セキュリティのため除外
+.env
+.env.local
+.env.development
+.env.production
+
+# その他
+docs
