@@ -1,29 +1,93 @@
-// Data Transfer Object（DTO）の型定義
-// クライアントコンポーネントに安全に渡すためのデータ構造
+/**
+ * Data Transfer Objects (DTOs)
+ * サーバーからクライアントに安全に渡すためのデータ構造を定義
+ */
 
-// ユーザー情報のDTO
+// ユーザー情報DTO
 export type UserDTO = {
     id: string;
     name: string | null;
     email: string | null;
     image: string | null;
-    // パスワードハッシュやトークンなどの機密情報は含めない
+    bio: string | null;
+    role: string;
+    createdAt: Date;
 };
 
-// チャット情報のDTO
-export type ChatDTO = {
+// 投稿DTO
+export type PostDTO = {
     id: string;
     title: string;
-    createdAt: string;
-    updatedAt: string;
-    // ユーザーIDなど機密性の高い情報は含めない
+    content: string;
+    published: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    author: {
+        id: string;
+        name: string | null;
+        image: string | null;
+    };
+    commentCount: number;
 };
 
-// メッセージのDTO
+// コメントDTO
+export type CommentDTO = {
+    id: string;
+    content: string;
+    createdAt: Date;
+    author: {
+        id: string;
+        name: string | null;
+        image: string | null;
+    };
+};
+
+// チャットDTO
+export type ChatDTO = {
+    id: string;
+    name: string | null;
+    createdAt: Date;
+    participants: {
+        id: string;
+        name: string | null;
+        image: string | null;
+    }[];
+    lastMessage?: {
+        content: string;
+        createdAt: Date;
+    };
+};
+
+// メッセージDTO
 export type MessageDTO = {
     id: string;
-    role: 'user' | 'assistant' | 'system';
     content: string;
-    createdAt: string;
-    // チャットIDなど機密性の高い情報は含めない
+    createdAt: Date;
+    userId: string;
+};
+
+// ファイルDTO
+export type FileDTO = {
+    id: string;
+    name: string;
+    size: number;
+    url: string;
+    contentType: string;
+    createdAt: Date;
+};
+
+// API共通レスポンス型
+export type ApiResponse<T = any> = {
+    success: boolean;
+    data?: T;
+    error?: string;
+    validationErrors?: Record<string, string[]>;
+};
+
+// ページネーション型
+export type PaginatedResponse<T> = {
+    items: T[];
+    totalCount: number;
+    pageCount: number;
+    currentPage: number;
 }; 

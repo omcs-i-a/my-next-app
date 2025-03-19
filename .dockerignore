@@ -18,9 +18,11 @@ build
 
 # 環境変数ファイル - セキュリティのため除外
 .env
+.env.example
 .env.local
 .env.development
 .env.production
 
 # その他
 docs
+.cursor
