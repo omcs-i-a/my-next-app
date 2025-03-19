@@ -3,15 +3,21 @@
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import UserMenu from './UserMenu';
+import { MdAdd, MdKeyboardArrowRight, MdKeyboardArrowDown, MdChatBubbleOutline } from 'react-icons/md';
 
 export default function Header() {
     const { data: session, status } = useSession();
     const isLoading = status === 'loading';
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isMenuVisible, setIsMenuVisible] = useState(false);
+    const [expandChats, setExpandChats] = useState(false);
+    const [chatHistory, setChatHistory] = useState<any[]>([]);
     const router = useRouter();
+    const pathname = usePathname();
+
+    const isChat = pathname.startsWith('/chat');
 
     useEffect(() => {
         if (isMenuOpen) {
@@ -25,8 +31,37 @@ export default function Header() {
         }
     }, [isMenuOpen]);
 
+    // チャット履歴を取得
+    useEffect(() => {
+        if (isMenuOpen && expandChats) {
+            fetchChatHistory();
+        }
+    }, [isMenuOpen, expandChats]);
+
+    // チャット履歴を取得する関数
+    const fetchChatHistory = async () => {
+        try {
+            const response = await fetch('/api/chat');
+            if (response.ok) {
+                const data = await response.json();
+                setChatHistory(data.chats || []);
+            }
+        } catch (error) {
+            console.error('チャット履歴の取得に失敗しました', error);
+        }
+    };
+
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
+    };
+
+    const toggleExpandChats = () => {
+        setExpandChats(!expandChats);
+    };
+
+    const createNewChat = () => {
+        router.push('/chat');
+        setIsMenuOpen(false);
     };
 
     const handleNavigate = (path: string) => {
@@ -34,6 +69,11 @@ export default function Header() {
         setIsMenuOpen(false);
         setIsMenuVisible(false);
         router.push(path);
+    };
+
+    const openChat = (chatId: string) => {
+        router.push(`/chat?id=${chatId}`);
+        setIsMenuOpen(false);
     };
 
     return (
@@ -99,12 +139,59 @@ export default function Header() {
                         >
                             ホーム
                         </button>
-                        <button
-                            className="block w-full text-left px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
-                            onClick={() => handleNavigate('/chat')}
-                        >
-                            チャット
-                        </button>
+
+                        {/* チャットメニュー */}
+                        <div>
+                            <div className="flex items-center justify-between px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50">
+                                <div className="flex items-center flex-1">
+                                    <button
+                                        onClick={toggleExpandChats}
+                                        className="mr-2 text-gray-600"
+                                        aria-label="チャット履歴を表示"
+                                    >
+                                        {expandChats ?
+                                            <MdKeyboardArrowDown size={20} /> :
+                                            <MdKeyboardArrowRight size={20} />
+                                        }
+                                    </button>
+                                    <button
+                                        className="flex-1 text-left"
+                                        onClick={() => handleNavigate('/chat')}
+                                    >
+                                        チャット
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={createNewChat}
+                                    className="text-gray-600 hover:text-gray-900 p-1"
+                                    title="新しいチャットを作成"
+                                >
+                                    <MdAdd size={20} />
+                                </button>
+                            </div>
+
+                            {/* チャット履歴 - 展開時のみ表示 */}
+                            {expandChats && (
+                                <div className="ml-8 space-y-1">
+                                    {chatHistory.length > 0 ? (
+                                        chatHistory.map(chat => (
+                                            <button
+                                                key={chat.id}
+                                                className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                                onClick={() => openChat(chat.id)}
+                                            >
+                                                <MdChatBubbleOutline className="mr-2 text-gray-500" size={16} />
+                                                <span className="truncate">{chat.title}</span>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="px-3 py-2 text-sm text-gray-500">
+                                            履歴がありません
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <div className="pt-4 pb-3 border-t border-gray-200">
                         <div className="px-4">

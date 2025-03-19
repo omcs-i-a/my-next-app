@@ -16,8 +16,8 @@ RUN npm install
 # 残りのソースコードを全てコピー
 COPY . .
 
-# 本番環境用の環境変数を設定
-RUN cp .env.production .env
+# 本番環境用の環境変数設定行を削除
+# RUN cp .env.production .env
 
 # Prismaクライアントを生成
 RUN npx prisma generate

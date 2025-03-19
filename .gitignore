@@ -12,7 +12,7 @@ build/
 dist/
 
 # ドキュメント
-docs/infra.md
+docs
 
 # dependencies
 /node_modules
