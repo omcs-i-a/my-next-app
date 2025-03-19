@@ -118,6 +118,9 @@ resource "azurerm_linux_web_app" "webapp" {
     "OPENAI_API_KEY"                      = var.openai_api_key
     "OPENAI_API_URL"                      = var.openai_api_url
     "OPENAI_API_MODEL"                    = var.openai_api_model
+    # 管理者認証情報
+    "ADMIN_EMAIL"                         = var.admin_email
+    "ADMIN_PASSWORD"                      = var.admin_password
   }
 }
 
