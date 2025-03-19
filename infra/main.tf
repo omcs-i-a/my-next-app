@@ -114,6 +114,10 @@ resource "azurerm_linux_web_app" "webapp" {
     "GOOGLE_CLIENT_ID"                    = var.google_client_id
     "GOOGLE_CLIENT_SECRET"                = var.google_client_secret
     "NODE_ENV"                            = "production"
+    # OpenAI設定
+    "OPENAI_API_KEY"                      = var.openai_api_key
+    "OPENAI_API_URL"                      = var.openai_api_url
+    "OPENAI_API_MODEL"                    = var.openai_api_model
   }
 }
 

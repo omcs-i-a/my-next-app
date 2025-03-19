@@ -82,3 +82,22 @@ variable "google_client_secret" {
   type      = string
   sensitive = true
 }
+
+# OpenAI設定
+variable "openai_api_key" {
+  type        = string
+  sensitive   = true
+  description = "OpenAI APIキー"
+}
+
+variable "openai_api_url" {
+  type        = string
+  default     = "https://api.openai.com/v1"
+  description = "OpenAI APIのURL"
+}
+
+variable "openai_api_model" {
+  type        = string
+  default     = "gpt-4o"
+  description = "使用するOpenAIのモデル"
+}
