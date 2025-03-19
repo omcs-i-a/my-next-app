@@ -5,8 +5,7 @@
 ## 主な機能
 
 - **認証システム**: NextAuth.jsによるマルチプロバイダー認証（Email/Password, Google, GitHub）
-- **生成AI対話**: OpenAIのAPIを使用したインテリジェントな会話機能
-- **データ分析ダッシュボード**: データの可視化と分析
+- **生成AI対話**: OpenAIのAPIを使用した会話機能
 - **管理パネル**: データベーステーブルの閲覧・管理機能
 - **クラウドデプロイメント**: Azure上でのコンテナ化されたデプロイメント
 
@@ -77,9 +76,6 @@ graph TD
 
 ### AI / データサイエンス
 - **OpenAI API**: GPT-4等のLLMを使用した生成AI機能
-- **数理最適化アルゴリズム**: データ処理と分析
-- **機械学習モデル**: 需要予測 
-- **データ可視化**: インタラクティブなチャートとグラフ
 
 ### インフラストラクチャ
 - **Docker**: アプリケーションのコンテナ化
@@ -97,64 +93,5 @@ graph TD
 - npm または yarn
 - Git
 
-### 手順
-
-1. リポジトリのクローン
-```bash
-git clone https://github.com/yourusername/your-portfolio-app.git
-cd your-portfolio-app
-```
-
-2. 環境変数の設定
-`.env.local`ファイルを作成し、必要な環境変数を設定:
-```
-# NextAuth設定
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret-here
-
-# データベース接続
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/nextauth"
-
-# OAuth設定
-GITHUB_ID=your-github-client-id
-GITHUB_SECRET=your-github-client-secret
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-
-# OpenAI設定
-OPENAI_API_KEY=your-openai-api-key
-
-# 管理者認証情報
-ADMIN_EMAIL=test_omc@gmail.com
-ADMIN_PASSWORD=test_omc_Pass
-```
-
-3. Docker Composeでの起動
-```bash
-docker-compose up -d
-```
-これにより、アプリケーションとPostgreSQLデータベースが起動します。
-
-4. マイグレーションの実行
-```bash
-docker compose exec app npx prisma migrate dev
-```
-
-5. アプリケーションにアクセス
-ブラウザで [http://localhost:3000](http://localhost:3000) にアクセス
-
-### 管理パネルへのアクセス
-[http://localhost:3000/admin](http://localhost:3000/admin) にアクセスし、設定した管理者認証情報でログインします。
-
-## Azureへのデプロイ
-
-プロジェクトには、Azure環境へのデプロイに必要なTerraformスクリプトが含まれています。infraディレクトリのmain.tf、variables.tf、terraform.tfvarsを適宜作成・編集してください。
-
-```bash
-cd infra
-terraform init
-terraform plan
-terraform apply
-```
 
 
