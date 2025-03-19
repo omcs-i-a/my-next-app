@@ -4,9 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getChatById, sendMessage, leaveChat } from '@/app/actions/chat-actions';
 import { ChatDTO, MessageDTO } from '@/types/dto';
+import { useSession } from 'next-auth/react';
 
 export default function ChatPage({ params }: { params: { id: string } }) {
     const router = useRouter();
+    const { data: session, status } = useSession();
     const [chat, setChat] = useState<ChatDTO | null>(null);
     const [messages, setMessages] = useState<MessageDTO[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -17,39 +19,55 @@ export default function ChatPage({ params }: { params: { id: string } }) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [leavingChat, setLeavingChat] = useState(false);
 
+    // クライアントサイドでの認証チェック
     useEffect(() => {
-        const fetchChat = async () => {
-            try {
-                setLoading(true);
-                const result = await getChatById(params.id);
+        if (status === 'unauthenticated') {
+            // 未認証の場合はログインページにリダイレクト
+            router.push(`/login?callbackUrl=/chats/${params.id}`);
+        }
+    }, [status, router, params.id]);
 
-                if (result.error) {
-                    setError(result.error);
-                    return;
+    useEffect(() => {
+        // 認証済みの場合のみチャットデータを取得
+        if (status === 'authenticated') {
+            const fetchChat = async () => {
+                try {
+                    setLoading(true);
+                    const result = await getChatById(params.id);
+
+                    if (result.error) {
+                        setError(result.error);
+                        // 権限エラーやアクセスエラーの場合はチャット一覧ページにリダイレクト
+                        if (result.error.includes('権限') || result.error.includes('アクセス')) {
+                            router.push('/chats');
+                            return;
+                        }
+                        return;
+                    }
+
+                    if (result.chat) {
+                        setChat(result.chat);
+                    }
+
+                    if (result.messages) {
+                        setMessages(result.messages);
+                    }
+                } catch (err) {
+                    setError('チャットの取得中にエラーが発生しました');
+                    console.error(err);
+                } finally {
+                    setLoading(false);
                 }
+            };
 
-                if (result.chat) {
-                    setChat(result.chat);
-                }
+            fetchChat();
 
-                if (result.messages) {
-                    setMessages(result.messages);
-                }
-            } catch (err) {
-                setError('チャットの取得中にエラーが発生しました');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
+            // ポーリング処理（1分ごとに更新）
+            const intervalId = setInterval(fetchChat, 60000);
 
-        fetchChat();
-
-        // ポーリング処理（1分ごとに更新）
-        const intervalId = setInterval(fetchChat, 60000);
-
-        return () => clearInterval(intervalId);
-    }, [params.id]);
+            return () => clearInterval(intervalId);
+        }
+    }, [status, params.id, router]);
 
     // 新しいメッセージが来たら自動スクロール
     useEffect(() => {
@@ -57,6 +75,25 @@ export default function ChatPage({ params }: { params: { id: string } }) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages]);
+
+    // 認証状態を確認中の場合はローディング表示
+    if (status === 'loading' || (status === 'authenticated' && loading)) {
+        return (
+            <div className="p-6 max-w-4xl mx-auto">
+                <h1 className="text-2xl font-bold mb-6">チャットを読み込み中...</h1>
+                <div className="animate-pulse">
+                    <div className="h-8 bg-gray-200 mb-4 rounded-md"></div>
+                    <div className="h-80 bg-gray-200 rounded-md mb-4"></div>
+                    <div className="h-10 bg-gray-200 rounded-md"></div>
+                </div>
+            </div>
+        );
+    }
+
+    // 未認証の場合は何も表示しない（上のuseEffectでリダイレクト処理済み）
+    if (status === 'unauthenticated') {
+        return null;
+    }
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -76,6 +113,12 @@ export default function ChatPage({ params }: { params: { id: string } }) {
 
             if (result.error) {
                 setError(result.error);
+                // 権限エラーの場合はチャット一覧にリダイレクト
+                if (result.error.includes('権限') || result.error.includes('アクセス')) {
+                    router.push('/chats');
+                    return;
+                }
+
                 if (result.fieldErrors) {
                     setFieldErrors(result.fieldErrors);
                 }
@@ -85,6 +128,12 @@ export default function ChatPage({ params }: { params: { id: string } }) {
             // 成功したらメッセージをクリアして最新のメッセージを取得
             setNewMessage('');
             const updatedResult = await getChatById(params.id);
+
+            if (updatedResult.error) {
+                // エラーがある場合はチャット一覧にリダイレクト
+                router.push('/chats');
+                return;
+            }
 
             if (updatedResult.messages) {
                 setMessages(updatedResult.messages);
@@ -121,19 +170,6 @@ export default function ChatPage({ params }: { params: { id: string } }) {
             setLeavingChat(false);
         }
     };
-
-    if (loading) {
-        return (
-            <div className="p-6 max-w-4xl mx-auto">
-                <h1 className="text-2xl font-bold mb-6">チャットを読み込み中...</h1>
-                <div className="animate-pulse">
-                    <div className="h-8 bg-gray-200 mb-4 rounded-md"></div>
-                    <div className="h-80 bg-gray-200 rounded-md mb-4"></div>
-                    <div className="h-10 bg-gray-200 rounded-md"></div>
-                </div>
-            </div>
-        );
-    }
 
     if (error && !chat) {
         return (
@@ -191,8 +227,8 @@ export default function ChatPage({ params }: { params: { id: string } }) {
                                 </div>
                                 <div
                                     className={`max-w-xs md:max-w-sm px-4 py-2 rounded-lg ${message.isOwnMessage
-                                            ? 'bg-blue-100 text-blue-900'
-                                            : 'bg-gray-200 text-gray-900'
+                                        ? 'bg-blue-100 text-blue-900'
+                                        : 'bg-gray-200 text-gray-900'
                                         }`}
                                 >
                                     <p className="break-words whitespace-pre-wrap">{message.content}</p>

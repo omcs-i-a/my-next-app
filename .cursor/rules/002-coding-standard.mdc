@@ -278,3 +278,90 @@ return user; // 機密情報も含めて全て返してしまう
 
 7. **トランザクション**
    - 複数の関連データ操作には必ずトランザクションを使用する
+
+## 10. ページコンポーネントの認証・認可チェック
+
+各ページコンポーネントでは、ミドルウェアによるグローバルな保護に加えて、コンポーネント内でも認証・認可チェックを実装する必要があります。これにより、多層的な防御を実現し、不正アクセスによる機密情報の漏洩を防止します。
+
+### サーバーコンポーネントでの認証チェック
+
+```typescript
+// 良い例: サーバーコンポーネントでの認証チェック
+export default async function ProtectedPage() {
+  // 認証チェック - 未認証ユーザーはログインページにリダイレクト
+  const session = await getAuthSession();
+  
+  // 必要に応じて権限チェック
+  if (requiredPermission && !hasPermission(session, requiredPermission)) {
+    redirect('/unauthorized');
+  }
+  
+  // 以下、認証済みユーザー向けコンテンツ
+}
+```
+
+### クライアントコンポーネントでの認証チェック
+
+```typescript
+// 良い例: クライアントコンポーネントでの認証チェック
+'use client';
+
+export default function ProtectedClientPage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  
+  // 認証状態が解決するまでローディング表示
+  if (status === 'loading') {
+    return <LoadingView />;
+  }
+  
+  // 未認証ユーザーをリダイレクト
+  if (status === 'unauthenticated') {
+    router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
+    return null;
+  }
+  
+  // 以下、認証済みユーザー向けコンテンツ
+}
+```
+
+### 認証・認可チェックのベストプラクティス
+
+1. **早期チェック**: ページコンポーネントの先頭でチェックを行い、条件を満たさない場合は早期にリダイレクト
+2. **コールバックURL**: ログインリダイレクト時にはコールバックURLを含めて、認証後に元のページに戻れるようにする
+3. **公開/非公開の分離**: 同じページ内に公開情報と非公開情報がある場合は、認証状態に応じて表示内容を分ける
+4. **エラーメッセージ**: 権限エラーの場合は詳細な理由を表示せず、一般的なメッセージを表示する
+5. **非同期処理の考慮**: データ取得中やセッション確認中は適切なローディング状態を表示
+
+### 認証状態に応じたUI表示
+
+```tsx
+// 良い例: 認証状態に応じたUI表示
+export default function ConditionalContent() {
+  const { data: session } = useSession();
+  const isAuthenticated = !!session;
+  
+  return (
+    <div>
+      <h1>コンテンツタイトル</h1>
+      
+      {/* 公開コンテンツ（全ユーザーに表示） */}
+      <PublicContent />
+      
+      {/* 認証済みユーザーのみに表示するコンテンツ */}
+      {isAuthenticated ? (
+        <PrivateContent user={session.user} />
+      ) : (
+        <LoginPrompt />
+      )}
+    </div>
+  );
+}
+```
+
+### セキュリティ考慮事項
+
+1. **多層的な防御**: ミドルウェアとページコンポーネントの両方でチェックを行う
+2. **機密情報の保護**: クライアントに送信するデータは認証状態に応じて厳格にフィルタリングする
+3. **権限変更の即時反映**: セッションやトークンの変更が即座に権限に反映されるようにする
+4. **パフォーマンスへの影響**: 頻繁なセッションチェックによるパフォーマンス低下に注意する

@@ -160,36 +160,103 @@ export async function getPostById(
 }
 
 /**
- * 新規投稿作成アクション
+ * 特定のユーザーの投稿一覧を取得する
  */
-export async function createPost(
-    formData: FormData
-): Promise<{ success?: boolean; postId?: string; error?: string; fieldErrors?: Record<string, string[]> }> {
+export async function getUserPosts(
+    userId: string,
+    page: number = 1,
+    perPage: number = 10,
+    includePrivate: boolean = false
+) {
     try {
-        // 認証済みセッションを取得し、ユーザーIDを安全に取得
+        const session = await getAuthSession();
+
+        // 非公開投稿を含める場合は、自分の投稿を見る場合のみ許可
+        if (includePrivate && (!session || session.user.id !== userId)) {
+            return {
+                error: "非公開投稿の閲覧権限がありません"
+            };
+        }
+
+        const skip = (page - 1) * perPage;
+
+        // 公開投稿のみ、または自分の非公開投稿も含める
+        const where = {
+            authorId: userId,
+            ...(includePrivate ? {} : { published: true })
+        };
+
+        const posts = await db.post.findMany({
+            where,
+            select: {
+                id: true,
+                title: true,
+                content: true,
+                published: true,
+                createdAt: true,
+                updatedAt: true,
+                author: {
+                    select: {
+                        id: true,
+                        name: true,
+                        image: true,
+                    }
+                },
+                _count: {
+                    select: {
+                        comments: true,
+                        likes: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: perPage
+        });
+
+        const totalPosts = await db.post.count({ where });
+
+        return {
+            posts: posts.map(post => toPostDTO(post)),
+            pagination: {
+                total: totalPosts,
+                page,
+                perPage,
+                pageCount: Math.ceil(totalPosts / perPage)
+            }
+        };
+    } catch (error) {
+        console.error("ユーザー投稿一覧取得中にエラーが発生しました:", error);
+        return { error: "投稿の取得に失敗しました" };
+    }
+}
+
+/**
+ * 投稿を作成する
+ */
+export async function createPost(formData: FormData) {
+    try {
+        // 認証済みセッションを取得（未認証の場合はリダイレクト）
         const session = await getAuthSession();
         const userId = getSessionUserId(session);
 
-        // 入力データの取得とサニタイズ
-        const title = sanitizeInput(formData.get("title") as string);
-        const content = sanitizeInput(formData.get("content") as string);
-        const published = formData.get("published") === "true";
-
-        // バリデーション
+        // フォームデータの検証
         const validationResult = postCreateSchema.safeParse({
-            title,
-            content,
-            published,
+            title: formData.get('title'),
+            content: formData.get('content'),
+            published: formData.get('published') === 'true'
         });
 
         if (!validationResult.success) {
             return {
-                error: "入力内容に問題があります",
-                fieldErrors: validationResult.error.formErrors.fieldErrors,
+                error: "入力データが無効です",
+                validationErrors: validationResult.error.formErrors.fieldErrors
             };
         }
 
-        // セッションから取得したユーザーIDを使用して保存
+        const { title, content, published } = validationResult.data;
+
+        // 投稿の作成
         const post = await db.post.create({
             data: {
                 title,
@@ -197,94 +264,129 @@ export async function createPost(
                 published,
                 userId,
             },
+            select: {
+                id: true,
+                title: true,
+                content: true,
+                published: true,
+                createdAt: true,
+                updatedAt: true,
+                author: {
+                    select: {
+                        id: true,
+                        name: true,
+                        image: true,
+                    }
+                },
+            }
         });
 
-        revalidatePath("/posts");
-        return { success: true, postId: post.id };
+        // キャッシュの再検証
+        revalidatePath('/posts');
+        revalidatePath('/dashboard');
+
+        return { post: toPostDTO(post) };
     } catch (error) {
-        console.error("投稿作成エラー:", error);
+        console.error("投稿作成中にエラーが発生しました:", error);
         return { error: "投稿の作成に失敗しました" };
     }
 }
 
 /**
- * 投稿更新アクション（権限チェック付き）
+ * 投稿を更新する
  */
-export async function updatePost(
-    postId: string,
-    formData: FormData
-): Promise<{ success?: boolean; error?: string; fieldErrors?: Record<string, string[]> }> {
+export async function updatePost(postId: string, formData: FormData) {
     try {
         // 認証済みセッションを取得
-        await getAuthSession();
+        const session = await getAuthSession();
 
         // 権限チェック
         const permission = await checkPermission("post", postId);
 
         if (!permission.allowed) {
-            return { error: permission.reason || "この操作を実行する権限がありません" };
+            return { error: permission.reason || "この投稿を更新する権限がありません" };
         }
 
-        // 入力データの取得とサニタイズ
-        const title = sanitizeInput(formData.get("title") as string);
-        const content = sanitizeInput(formData.get("content") as string);
-        const published = formData.get("published") === "true";
-
-        // バリデーション
-        const validationResult = postUpdateSchema.safeParse({
-            title,
-            content,
-            published,
+        // フォームデータの検証
+        const validationResult = postCreateSchema.safeParse({
+            title: formData.get('title'),
+            content: formData.get('content'),
+            published: formData.get('published') === 'true'
         });
 
         if (!validationResult.success) {
             return {
-                error: "入力内容に問題があります",
-                fieldErrors: validationResult.error.formErrors.fieldErrors,
+                error: "入力データが無効です",
+                validationErrors: validationResult.error.formErrors.fieldErrors
             };
         }
 
-        await db.post.update({
+        const { title, content, published } = validationResult.data;
+
+        // 投稿の更新
+        const post = await db.post.update({
             where: { id: postId },
             data: {
                 title,
                 content,
-                published,
+                published
             },
+            select: {
+                id: true,
+                title: true,
+                content: true,
+                published: true,
+                createdAt: true,
+                updatedAt: true,
+                author: {
+                    select: {
+                        id: true,
+                        name: true,
+                        image: true,
+                    }
+                },
+            }
         });
 
+        // キャッシュの再検証
+        revalidatePath('/posts');
         revalidatePath(`/posts/${postId}`);
-        revalidatePath("/posts");
-        return { success: true };
+        revalidatePath('/dashboard');
+
+        return { post: toPostDTO(post) };
     } catch (error) {
-        console.error("投稿更新エラー:", error);
+        console.error("投稿更新中にエラーが発生しました:", error);
         return { error: "投稿の更新に失敗しました" };
     }
 }
 
 /**
- * 投稿削除アクション（権限チェック付き）
+ * 投稿を削除する
  */
-export async function deletePost(postId: string): Promise<{ success?: boolean; error?: string }> {
+export async function deletePost(postId: string) {
     try {
         // 認証済みセッションを取得
-        await getAuthSession();
+        const session = await getAuthSession();
 
         // 権限チェック
         const permission = await checkPermission("post", postId);
 
         if (!permission.allowed) {
-            return { error: permission.reason || "この操作を実行する権限がありません" };
+            return { error: permission.reason || "この投稿を削除する権限がありません" };
         }
 
+        // 投稿の削除（コメントと「いいね」は外部キー制約により自動削除）
         await db.post.delete({
-            where: { id: postId },
+            where: { id: postId }
         });
 
-        revalidatePath("/posts");
+        // キャッシュの再検証
+        revalidatePath('/posts');
+        revalidatePath('/dashboard');
+
         return { success: true };
     } catch (error) {
-        console.error("投稿削除エラー:", error);
+        console.error("投稿削除中にエラーが発生しました:", error);
         return { error: "投稿の削除に失敗しました" };
     }
 }
