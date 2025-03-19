@@ -67,8 +67,19 @@ graph TB
     end
 
     subgraph "Azure環境"
-        E[Azure Container Registry<br>ACR] --> F[Azure App Service<br>Webアプリ]
-        F --> G[(Azure PostgreSQL<br>Flexible Server)]
+        subgraph "仮想ネットワーク"
+            subgraph "アプリケーションサブネット"
+                F[Azure App Service<br>Webアプリ]
+            end
+            
+            subgraph "データベースサブネット"
+                G[(Azure PostgreSQL<br>Flexible Server)]
+            end
+            
+            F <--> |Private Link| G
+        end
+        
+        E[Azure Container Registry<br>ACR] --> |イメージプル| F
     end
 
     subgraph "Terraform管理"
@@ -76,10 +87,11 @@ graph TB
         H --> |作成・設定|F
         H --> |作成・設定|G
         H --> |環境変数設定|I[app_settings]
+        H --> |VNET設定|J[Private Link]
     end
 
-    A --> |Dockerイメージ化|J[Dockerイメージ]
-    J --> |プッシュ|E
+    A --> |Dockerイメージ化|K[Dockerイメージ]
+    K --> |プッシュ|E
 ```
 
 ### デプロイフロー
@@ -89,19 +101,23 @@ sequenceDiagram
     participant T as Terraform
     participant ACR as Azure Container Registry
     participant AZ as Azure App Service
+    participant VNET as 仮想ネットワーク
     participant DB as Azure PostgreSQL
 
     L->>L: マイグレーションファイル作成
     L->>T: terraform init/plan/apply
+    T->>VNET: 仮想ネットワーク作成
     T->>ACR: ACRの作成
     T->>DB: PostgreSQLサーバー作成
+    T->>VNET: Private Link設定
     T->>AZ: App Service作成
     T->>AZ: 環境変数設定
+    T->>AZ: VNet統合設定
     L->>L: Dockerイメージビルド
     L->>ACR: イメージプッシュ
     ACR->>AZ: イメージデプロイ
-    AZ->>DB: マイグレーション実行
-    Note over AZ,DB: アプリケーション起動
+    AZ->>DB: プライベート接続でマイグレーション実行
+    Note over AZ,DB: SSL/TLS暗号化通信
 ```
 
 ## 前提条件
@@ -206,9 +222,27 @@ az webapp log tail --name my-nextapp-web --resource-group my-nextapp-rg
 
 ## 6. セキュリティ考慮事項
 
-- 本番環境では適切なSSL/TLS設定を行う
+### 6.1 SSL/TLS設定
+- 本番環境では適切なSSL/TLS設定を実施済み
+- データベース接続はSSL/TLS通信を強制（TLS 1.2以上）
+- WebアプリはHTTPS通信を強制
+- 安全な暗号スイートのみを使用
+
+### 6.2 Private Link構成
+- Azure Private Linkを使用し、仮想ネットワーク内での通信を確保
+- PostgreSQLサーバーへの接続はプライベートエンドポイント経由
+- 外部からのアクセスを制限し、パブリックネットワークからの接続を防止
+- Virtual Network統合によるプライベート通信の確保
+
+### 6.3 機密情報の管理
 - 機密情報（APIキーなど）は安全に管理
-- 定期的なバックアップとモニタリングの設定
+- Terraformの変数として保存し、tfvarsファイルはバージョン管理から除外
+- KeyVaultなどのシークレット管理サービスの利用を検討
+
+### 6.4 定期的なバックアップとモニタリング
+- データベースの自動バックアップを設定（7日間保持）
+- アプリケーションとデータベースのメトリクス監視
+- セキュリティログの収集と分析
 
 ## 7. 運用とメンテナンス
 
@@ -221,6 +255,44 @@ az webapp log tail --name my-nextapp-web --resource-group my-nextapp-rg
 - アプリケーションの健全性チェック
 - リソース使用率の監視
 - エラーログの監視
+
+## 8. セキュリティチェック
+
+### 8.1 SSLセキュリティチェック
+以下のコマンドを使用して、SSL/TLS設定の安全性を検証します：
+
+```bash
+# SSLLabsを使用したSSLチェック
+curl -s https://api.ssllabs.com/api/v3/analyze?host=my-nextapp-web.azurewebsites.net
+
+# OpenSSLを使用した接続確認
+openssl s_client -connect my-nextapp-web.azurewebsites.net:443 -tls1_2
+
+# Nmap SSLスキャン
+nmap --script ssl-enum-ciphers -p 443 my-nextapp-web.azurewebsites.net
+```
+
+### 8.2 セキュリティスキャナー
+定期的にセキュリティスキャンを実行してください：
+
+```bash
+# AzureネイティブなセキュリティチェックツールMicrosoft Defender for Cloud
+az security assessment list --resource-group my-nextapp-rg
+
+# ZAPを使用したWebアプリケーションスキャン
+docker run -t owasp/zap2docker-stable zap-baseline.py -t https://my-nextapp-web.azurewebsites.net
+```
+
+### 8.3 Private Link接続確認
+Private Link接続が正しく機能しているかを確認します：
+
+```bash
+# Private DNS解決の確認
+az network private-dns record-set list --resource-group my-nextapp-rg --zone-name privatelink.postgres.database.azure.com
+
+# プライベートエンドポイント接続情報の表示
+az network private-endpoint show --name my-nextapp-db-server-endpoint --resource-group my-nextapp-rg
+```
 
 ---
 
