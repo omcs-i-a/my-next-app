@@ -4,6 +4,7 @@ infra/.terraform.lock.hcl
 infra/terraform.tfstate
 infra/terraform.tfstate.backup
 infra/terraform.tfvars
+infra/variables.tf
 
 # ビルド成果物
 .next/
