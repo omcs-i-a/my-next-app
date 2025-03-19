@@ -101,3 +101,16 @@ variable "openai_api_model" {
   default     = "gpt-4o"
   description = "使用するOpenAIのモデル"
 }
+
+# 管理者認証情報
+variable "admin_email" {
+  type        = string
+  sensitive   = true
+  description = "管理パネルにログインするためのメールアドレス"
+}
+
+variable "admin_password" {
+  type        = string
+  sensitive   = true
+  description = "管理パネルにログインするためのパスワード"
+}

@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 // 保護するパス
-const protectedPaths = ['/chat'];
+const protectedPaths = ['/chat', '/admin/dashboard', '/admin/table'];
 
 // 公開パス
-const publicPaths = ['/', '/auth/signin', '/auth/signup', '/auth/signout', '/api/auth'];
+const publicPaths = ['/', '/auth/signin', '/auth/signup', '/auth/signout', '/api/auth', '/admin'];
 
 export async function middleware(request: NextRequest) {
     const path = request.nextUrl.pathname;
@@ -32,7 +32,12 @@ export async function middleware(request: NextRequest) {
 
     // 保護されたパスにアクセスしようとしていて、認証されていない場合
     if (protectedPaths.some(p => path === p || path.startsWith(p + '/')) && !token) {
-        // ログインページにリダイレクト
+        // 管理者ページの場合は管理者ログインページにリダイレクト
+        if (path.startsWith('/admin/')) {
+            return NextResponse.redirect(new URL('/admin', request.url));
+        }
+
+        // それ以外はNextAuthのログインページにリダイレクト
         const url = new URL('/auth/signin', request.url);
         url.searchParams.set('callbackUrl', encodeURI(request.url));
         return NextResponse.redirect(url);
