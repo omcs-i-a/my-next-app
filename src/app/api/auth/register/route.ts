@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hash } from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
+import { createVerificationToken } from '@/lib/token';
+import { sendVerificationEmail } from '@/lib/mail';
 
 const prisma = new PrismaClient();
 
@@ -44,14 +46,21 @@ export async function POST(req: NextRequest) {
         // パスワードのハッシュ化
         const hashedPassword = await hash(password, 12);
 
-        // ユーザー作成
+        // ユーザー作成（未認証状態）
         const user = await prisma.user.create({
             data: {
                 name,
                 email,
                 passwordHash: hashedPassword,
+                emailVerified: null, // 未認証状態
             } as any, // 一時的にanyを使用
         });
+
+        // メール認証用のトークンを生成
+        const verificationToken = await createVerificationToken(email);
+
+        // 認証メールを送信
+        await sendVerificationEmail(email, verificationToken);
 
         // ユーザー情報を返す（パスワードは含めない）
         const userResponse = {
@@ -64,7 +73,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
             {
                 user: userResponse,
-                message: 'アカウントが正常に作成されました。',
+                message: 'アカウントが作成されました。メールアドレスの確認を行ってください。',
+                requireVerification: true
             },
             { status: 201 }
         );

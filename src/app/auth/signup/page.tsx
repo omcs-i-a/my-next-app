@@ -14,6 +14,7 @@ function SignUpForm() {
     const [password, setPassword] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [error, setError] = useState('');
+    const [isRegistered, setIsRegistered] = useState(false);
     const searchParams = useSearchParams();
     const callbackUrl = searchParams?.get('callbackUrl') || '/';
 
@@ -55,8 +56,8 @@ function SignUpForm() {
                 throw new Error(data.message || 'アカウント作成に失敗しました。');
             }
 
-            // 成功したらログインページへリダイレクト（callbackUrlを維持）
-            router.push(`/auth/signin?registered=true&callbackUrl=${encodeURIComponent(callbackUrl)}`);
+            // アカウント作成成功、メール認証画面を表示
+            setIsRegistered(true);
         } catch (error: any) {
             console.error('登録エラー:', error);
             setError(error.message || 'アカウント作成中にエラーが発生しました。');
@@ -86,6 +87,46 @@ function SignUpForm() {
             setIsLoading(false);
         }
     };
+
+    // メール認証待ち画面
+    if (isRegistered) {
+        return (
+            <div className="p-3 sm:py-12 bg-gray-50 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-screen">
+                <div className="w-full sm:mx-auto sm:max-w-md">
+                    <h2 className="mt-3 sm:mt-6 text-center text-2xl sm:text-3xl font-extrabold text-gray-900">
+                        メール確認のお願い
+                    </h2>
+                </div>
+
+                <div className="mt-4 sm:mt-8 w-full sm:mx-auto sm:max-w-md">
+                    <div className="bg-white py-6 sm:py-8 px-4 shadow sm:rounded-lg sm:px-10">
+                        <div className="text-center">
+                            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+                                <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <h3 className="mt-3 text-lg font-medium text-gray-900">メールをご確認ください</h3>
+                            <p className="mt-2 text-sm text-gray-600">
+                                {email} に確認メールを送信しました。
+                            </p>
+                            <p className="mt-1 text-sm text-gray-600">
+                                メール内のリンクをクリックして、アカウントの認証を完了してください。
+                            </p>
+                            <div className="mt-5">
+                                <Link
+                                    href="/auth/signin"
+                                    className="text-indigo-600 hover:text-indigo-500 font-medium"
+                                >
+                                    ログインページへ戻る
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-3 sm:py-12 bg-gray-50 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-screen">
@@ -143,6 +184,9 @@ function SignUpForm() {
                                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                 />
                             </div>
+                            <p className="mt-1 text-xs text-gray-500">
+                                認証メールをお送りします
+                            </p>
                         </div>
 
                         <div>
@@ -254,10 +298,10 @@ function SignUpForm() {
     );
 }
 
-export default function SignUp() {
+export default function SignUpPage() {
     return (
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">ロード中...</div>}>
+        <Suspense fallback={<div>Loading...</div>}>
             <SignUpForm />
         </Suspense>
     );
-} 
+}
