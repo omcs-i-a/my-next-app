@@ -71,7 +71,7 @@ export default function UserMenu({ onLinkClick }: UserMenuProps = {}) {
                         if (onLinkClick) onLinkClick();
                         signOut({ callbackUrl: '/auth/signout' });
                     }}
-                    className="px-3 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 transition"
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition"
                 >
                     ログアウト
                 </button>
