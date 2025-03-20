@@ -32,8 +32,8 @@ export async function sendMail({ to, subject, html }: SendMailOptions) {
         console.log(`メール送信成功: ${info.messageId}`);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('メール送信エラー:', error);
-        return { success: false, error };
+        console.error('メール送信エラー:', error instanceof Error ? error.message : '不明なエラー');
+        return { success: false, error: error instanceof Error ? error.message : '不明なエラー' };
     }
 }
 

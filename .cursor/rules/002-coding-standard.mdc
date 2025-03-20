@@ -242,3 +242,44 @@ return user; // 機密情報も含めて全て返してしまう
 - サーバーアクションやAPIエンドポイントでは、認証・認可チェックを必ず行う
 - 別ユーザーのデータにアクセスできないよう、所有権の確認を厳格に行う
 - データベースクエリにはユーザーIDによるフィルタリングを常に含める
+
+## 10. ロギングとデバッグ
+
+### console.logの使用規約
+- **機密情報の出力禁止**: パスワード、トークン、認証情報、APIキーなどの機密情報を直接ログに出力しない
+- **ユーザーデータの処理**: ユーザー入力データは全文ではなく長さや構造情報のみをログに出力する
+- **構造化ログ**: オブジェクトを出力する場合は`JSON.stringify`を使用せず、必要な情報のみを含む新しいオブジェクトを作成する
+- **エラーオブジェクトの扱い**: エラーオブジェクト全体ではなく`error.message`のみを出力する
+
+```typescript
+// 悪い例
+console.log('ユーザーデータ:', JSON.stringify(user)); // 機密情報を含む全データを出力
+console.log('認証トークン:', token); // 認証情報を直接出力
+console.error('エラー:', error); // エラーオブジェクト全体を出力
+
+// 良い例
+console.log('ユーザーデータ受信:', { 
+  id: user.id,
+  dataSize: JSON.stringify(user).length 
+}); // 安全な情報のみ出力
+console.log('認証成功'); // トークン自体は出力しない
+console.error('エラー:', error instanceof Error ? error.message : '不明なエラー'); // エラーメッセージのみ出力
+```
+
+### 環境別ログ設定
+- **開発環境**: デバッグ情報を含む詳細なログを出力可能
+- **本番環境**: 最小限の重要情報のみをログに出力し、機密情報は完全に除外
+- **条件付きログ**: 本番環境では詳細なデバッグログを出力しないよう条件分岐を使用
+
+```typescript
+// 環境に応じたログレベル制御
+if (process.env.NODE_ENV !== 'production') {
+  console.log('詳細デバッグ情報:', debugInfo);
+}
+
+// ログレベルに応じた出力
+const logLevel = process.env.LOG_LEVEL || 'info';
+if (logLevel === 'debug') {
+  console.log('デバッグ情報:', debugInfo);
+}
+```
