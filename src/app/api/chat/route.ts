@@ -45,7 +45,11 @@ export async function POST(req: NextRequest) {
 
         // リクエストからメッセージを取得
         const data = await req.json();
-        console.log('Chat API: リクエストデータ', JSON.stringify(data));
+        console.log('Chat API: リクエストデータ受信', {
+            hasMessages: !!data.messages,
+            messageCount: data.messages?.length || 0,
+            hasChatId: !!data.chatId
+        });
 
         const { messages, chatId } = data;
 
@@ -61,7 +65,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'ユーザーメッセージが必要です' }, { status: 400 });
         }
 
-        console.log('Chat API: 最後のユーザーメッセージ', JSON.stringify(lastUserMessage));
+        console.log('Chat API: 最後のユーザーメッセージを受信', {
+            messageLength: lastUserMessage.content.length,
+            role: lastUserMessage.role
+        });
 
         try {
             // チャットIDがない場合は新しいチャットを作成
